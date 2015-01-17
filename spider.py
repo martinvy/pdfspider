@@ -150,13 +150,19 @@ class Spider():
             # get html site
             try:
                 response = urllib.request.urlopen(current_url)
-                site = response.read().decode()
+                site = response.read().decode('utf-8', 'ignore')
             except urllib.error.HTTPError as e:
                 print('The server couldn\'t fulfill the request.')
                 print('Error code: ', e.code)
+                break
             except urllib.error.URLError as e:
                 print('We failed to reach a server.')
                 print('Reason: ', e.reason)
+                break
+            except UnicodeDecodeError as e:
+                print('Unicode decode error')
+                print(e)
+                break
 
             # find all links
             links = re.findall('([^>]*)<a.*?href=(?:"|\')(/?.+?)(?:"|\').*?>\s*(.+?)\s*<', site, re.DOTALL)
@@ -184,10 +190,11 @@ class Spider():
                 # more links
                 elif not link in self.visited:
 
-                    r = re.search('/[^\.]+(\.\w+)?$', link, re.MULTILINE)
+                    # get suffix (last .xxx)
+                    r = re.search('/.+?(\.\w+)?$', link, re.MULTILINE)
 
                     # validate suffix
-                    if r and r.group(1) != None:
+                    if r and r.group(1) is not None:
                         if r.group(1)[1:] in WEBPAGE_SUFFIXES:
                             self.to_visit.add(link)
                         else:
